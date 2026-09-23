@@ -15,7 +15,6 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      # 关键：使用官方 Action 强制纯净初始化 MSVC 环境，彻底屏蔽 Strawberry/MinGW 的干扰
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -26,6 +25,12 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           C:\vcpkg\bootstrap-vcpkg.bat
+        shell: cmd
+
+      # 关键修改：显式让 vcpkg 安装 qtbase 以及 KeePassXC 需要的 Qt 模块
+      - name: Install Dependencies via vcpkg
+        run: |
+          C:\vcpkg\vcpkg install qtbase qtsvg qttools --triplet x64-windows
         shell: cmd
 
       - name: Configure CMake
