@@ -11,37 +11,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. 安装 CMake 和 Ninja
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
 
-      # 2. 自动拉取并配置 vcpkg（通过 vcpkg.json 清单文件自动管理 Qt6、Botan 等依赖）
-      - name: Setup vcpkg and Build Dependencies
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          runVcpkgInstall: true
+      - name: Clone and Bootstrap vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+        shell: cmd
 
-      # 3. 配置 CMake（应用 -DWITH_XC_NETWORKING=OFF 并绑定 vcpkg 工具链）
       - name: Configure CMake
         run: |
           mkdir build
           cd build
-          cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
+          cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
 
-      # 4. 编译
       - name: Build with Ninja
         run: |
           cd build
           ninja
 
-      # 5. 打包
       - name: Package
         run: |
           cd build
           cpack -G ZIP
 
-      # 6. 上传产物
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
