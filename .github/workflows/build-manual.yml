@@ -10,37 +10,35 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive # 确保把 vcpkg 子模块一起拉取下来
 
-      # 使用正确的 lukka/get-cmake 来同时安装 CMake 和 Ninja
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
 
-      # 运行 vcpkg 初始化（KeePassXC 源码自带 vcpkg.json，会自动下载配置 Qt6 等）
-      - name: Run vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgJsonPath: '${{ github.workspace }}/vcpkg.json'
+      # 初始化并引导自带的 vcpkg
+      - name: Bootstrap vcpkg
+        run: |
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
+        shell: cmd
 
-      # 配置 CMake（应用 -DWITH_XC_NETWORKING=OFF 并挂载 vcpkg 工具链）
       - name: Configure CMake
         run: |
           mkdir build
           cd build
-          cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" ..
+          cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
 
-      # 编译
       - name: Build with Ninja
         run: |
           cd build
           ninja
 
-      # 打包
       - name: Package
         run: |
           cd build
           cpack -G ZIP
 
-      # 上传产物
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
