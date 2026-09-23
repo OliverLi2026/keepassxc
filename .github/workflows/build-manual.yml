@@ -24,27 +24,27 @@ jobs:
           C:\vcpkg\bootstrap-vcpkg.bat
         shell: cmd
 
-      # 显式让 vcpkg 安装 Qt6（根据仓库的 vcpkg.json，通常会自动处理，但有时需要执行一次 install 确保完整）
-      - name: Install Dependencies via vcpkg
-        run: |
-          C:\vcpkg\vcpkg install --triplet x64-windows
-        shell: cmd
-
-      - name: Configure CMake
+      # 配置 CMake，显式指定使用 Visual Studio (MSVC) 和 Ninja，并关闭网络模块
+      - name: Configure CMake (MSVC)
         run: |
           mkdir build
           cd build
           cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
+        shell: cmd
 
+      # 编译（首次编译会通过 vcpkg 自动构建 Qt6 和 Botan，耗时较长）
       - name: Build with Ninja
         run: |
           cd build
           ninja
+        shell: cmd
 
+      # 打包
       - name: Package
         run: |
           cd build
           cpack -G ZIP
+        shell: cmd
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
