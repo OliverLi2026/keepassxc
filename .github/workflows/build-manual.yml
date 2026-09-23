@@ -1,0 +1,49 @@
+name: Build Windows KeePassXC
+
+on:
+  workflow_dispatch: # 允许你在 GitHub 网页端手动点击运行
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 安装 Ninja 构建工具（官方推荐用 Ninja 加快 Windows 编译）
+      - name: Setup Ninja
+        uses: lukka/get-ninja@latest
+
+      # 3. 配置 vcpkg（用于管理 KeePassXC 的 Windows 依赖项，如 Qt5 等）
+      - name: Run vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonPath: '${{ github.workspace }}/vcpkg.json'
+
+      # 4. 创建构建目录并运行 CMake（应用 -DWITH_XC_NETWORKING=OFF）
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake -G Ninja -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" ..
+
+      # 5. 开始编译
+      - name: Build with Ninja
+        run: |
+          cd build
+          ninja
+
+      # 6. 打包生成安装包/压缩包 (ZIP / MSI)
+      - name: Package
+        run: |
+          cd build
+          cpack -G ZIP
+
+      # 7. 上传编译好的 Windows 产物到 GitHub Actions
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeePassXC-Windows-NoNetwork
+          path: build/*.zip
