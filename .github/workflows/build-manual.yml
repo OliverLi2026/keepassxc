@@ -15,6 +15,10 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
+      # 关键：使用官方 Action 强制纯净初始化 MSVC 环境，彻底屏蔽 Strawberry/MinGW 的干扰
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
 
@@ -24,10 +28,8 @@ jobs:
           C:\vcpkg\bootstrap-vcpkg.bat
         shell: cmd
 
-      # 关键步骤：在配置前将 MinGW 从环境变量 PATH 中彻底移除，防止编译器混淆
-      - name: Configure CMake (Force MSVC)
+      - name: Configure CMake
         run: |
-          set PATH=%PATH:C:\mingw64\bin;=%
           mkdir build
           cd build
           cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
@@ -35,7 +37,6 @@ jobs:
 
       - name: Build with Ninja
         run: |
-          set PATH=%PATH:C:\mingw64\bin;=%
           cd build
           ninja
         shell: cmd
