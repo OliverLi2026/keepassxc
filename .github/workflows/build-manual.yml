@@ -11,31 +11,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 使用 GitHub 官方的 setup-cmake 动作，自带 CMake
-      - name: Setup CMake
-        uses: lukka/get-cmake@latest
+      # 1. 安装 Ninja 和 CMake
+      - name: Setup Ninja and CMake
+        uses: lukka/get-ninja@latest
+        id: ninja
+      - uses: lukka/get-cmake@latest
 
-      # 使用 scoop 或直接下载 Ninja，或者用静默参数的 winget
-      - name: Install Ninja via winget (Silent)
-        run: |
-          winget install --id Ninja-build.Ninja -e --accept-source-agreements --accept-package-agreements
+      # 2. 运行 vcpkg 缓存和初始化（KeePassXC 源码自带 vcpkg.json）
+      - name: Run vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonPath: '${{ github.workspace }}/vcpkg.json'
 
+      # 3. 配置 CMake，并指定 vcpkg 的工具链文件来自动寻找 Qt6
       - name: Configure CMake
         run: |
           mkdir build
           cd build
-          cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release ..
+          cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" ..
 
+      # 4. 编译
       - name: Build with Ninja
         run: |
           cd build
           ninja
 
+      # 5. 打包
       - name: Package
         run: |
           cd build
           cpack -G ZIP
 
+      # 6. 上传产物
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
