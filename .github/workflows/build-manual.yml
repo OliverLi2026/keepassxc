@@ -15,24 +15,28 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
+      # 1. 强制纯净初始化 MSVC 环境（解决 GCC/Perl 劫持编译器问题）
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
 
+      # 2. 秒级安装官方预编译的 Qt6（彻底避免 vcpkg 编译 Qt 导致超时、报错的问题）
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.*"
+          modules: "qtsvg qttools"
+
+      # 3. 仅用 vcpkg 处理其他轻量依赖（Botan, zlib 等）
       - name: Clone and Bootstrap vcpkg
         run: |
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           C:\vcpkg\bootstrap-vcpkg.bat
         shell: cmd
 
-      # 关键修改：显式让 vcpkg 安装 qtbase 以及 KeePassXC 需要的 Qt 模块
-      - name: Install Dependencies via vcpkg
-        run: |
-          C:\vcpkg\vcpkg install qtbase qtsvg qttools --triplet x64-windows
-        shell: cmd
-
+      # 4. 顺畅配置 CMake，完美识别 MSVC 与预编译 Qt6
       - name: Configure CMake
         run: |
           mkdir build
