@@ -11,10 +11,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Ninja and Qt dependencies via winget
+      # 使用 GitHub 官方的 setup-cmake 动作，自带 CMake
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      # 使用 scoop 或直接下载 Ninja，或者用静默参数的 winget
+      - name: Install Ninja via winget (Silent)
         run: |
-          winget install --id Ninja-build.Ninja -e
-          winget install --id Kitware.CMake -e
+          winget install --id Ninja-build.Ninja -e --accept-source-agreements --accept-package-agreements
 
       - name: Configure CMake
         run: |
