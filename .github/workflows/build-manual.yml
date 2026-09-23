@@ -24,22 +24,22 @@ jobs:
           C:\vcpkg\bootstrap-vcpkg.bat
         shell: cmd
 
-      # 配置 CMake，显式指定使用 Visual Studio (MSVC) 和 Ninja，并关闭网络模块
-      - name: Configure CMake (MSVC)
+      # 关键步骤：在配置前将 MinGW 从环境变量 PATH 中彻底移除，防止编译器混淆
+      - name: Configure CMake (Force MSVC)
         run: |
+          set PATH=%PATH:C:\mingw64\bin;=%
           mkdir build
           cd build
           cmake -G "Ninja" -DWITH_XC_ALL=ON -DWITH_XC_NETWORKING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
         shell: cmd
 
-      # 编译（首次编译会通过 vcpkg 自动构建 Qt6 和 Botan，耗时较长）
       - name: Build with Ninja
         run: |
+          set PATH=%PATH:C:\mingw64\bin;=%
           cd build
           ninja
         shell: cmd
 
-      # 打包
       - name: Package
         run: |
           cd build
